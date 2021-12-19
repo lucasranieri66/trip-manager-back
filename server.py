@@ -265,6 +265,35 @@ def traveller_trips(id):
         print(ex)
         return Response( response = json.dumps({"message": "erro ao recuperar viajens do viajante."}), status = 500, mimetype = "application/json")
 
+@app.route('/user-type/<string:id>', methods=['GET'])
+@cross_origin()
+def user_type(id):
+    try:
+        dbResponseTraveller = list(db.traveller.find({"_id": ObjectId(str(id))}))
+        if dbResponseTraveller:
+            return Response(
+                response = json.dumps({"id": "traveller"}),
+                status = 200,
+                mimetype = "application/json",
+            )
+        
+        dbResponseAgent = list(db.agent.find({"_id": ObjectId(str(id))}))
+        if dbResponseAgent:
+            return Response(
+                response = json.dumps({"id": "agent"}),
+                status = 200,
+                mimetype = "application/json",
+            )
+
+        return Response(
+            response = json.dumps({"message": "not found"}),
+            status = 409,
+            mimetype = "application/json",
+        )
+    except Exception as ex:
+        print(ex)
+        return Response( response = json.dumps({"message": "erro ao recuperar usuario."}), status = 500, mimetype = "application/json")
+
 
 def get_trips(username, agent):
 
