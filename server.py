@@ -34,18 +34,53 @@ def create_agent():
             "email": data["email"],
             "company": data["company"],
         }
+
+        #antes de inserir: veriricar se já tem no banco.
+        already_exists = db.agent.find_one({"username": agent["username"]}) #username deve ser único
+        if already_exists:
+            return Response(
+                response = json.dumps({"message": "agent already exists."}),
+                status = 403,
+                mimetype = "application/json"
+            )
         dbResponse = db.agent.insert_one(agent)
+        
         return Response(
-            response = json.dumps({"message": "user created", "id": f'{dbResponse.inserted_id}'}),
+            response = json.dumps({"message": "agent created", "id": f'{dbResponse.inserted_id}'}),
+            status = 200,
+            mimetype = "application/json",
+        )
+    except Exception as ex:
+        return ex
+
+@app.route('/agent-signin', methods=['POST'])
+@cross_origin()
+def login_agent():
+    try:
+        data = json.loads(request.data)
+        agent = {
+            "username": data["username"], 
+            "password": data["password"]
+        }
+
+        dbResponse = list(db.agent.find())
+
+        for user in dbResponse:
+            user['_id'] = str(user['_id'])
+        print(dbResponse)
+
+        return Response(
+            response = json.dumps({"id": f'{dbResponse[0]["_id"]}'}),
             status = 200,
             mimetype = "application/json",
         )
     except Exception as ex:
         print(ex)
+        return Response( response = json.dumps({"message": "cannot find the user."}), status = 500, mimetype = "application/json")
 
 @app.route('/traveller', methods=['POST'])
 @cross_origin()
-def create_agent():
+def create_traveller():
     try:
         data = json.loads(request.data)
         traveller = {
@@ -57,7 +92,7 @@ def create_agent():
         }
         dbResponse = db.traveller.insert_one(traveller)
         return Response(
-            response = json.dumps({"message": "user created", "id": f'{dbResponse.inserted_id}'}),
+            response = json.dumps({"message": "traveller created", "id": f'{dbResponse.inserted_id}'}),
             status = 200,
             mimetype = "application/json",
         )
