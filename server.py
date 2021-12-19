@@ -21,7 +21,7 @@ except:
     print('error: cannont connect to the db.')
 
 
-###################################
+################################### SIGNIN/SIGNUP
 @app.route('/agent', methods=['POST'])
 @cross_origin()
 def create_agent():
@@ -52,7 +52,12 @@ def create_agent():
             mimetype = "application/json",
         )
     except Exception as ex:
-        return ex
+        print(ex)
+        return Response(
+            response = json.dumps({"message": "Erro ao cadastrar agente."}),
+            status = 500,
+            mimetype = "application/json",
+        )
 
 @app.route('/agent-signin', methods=['POST'])
 @cross_origin()
@@ -119,6 +124,11 @@ def create_traveller():
         )
     except Exception as ex:
         print(ex)
+        return Response(
+            response = json.dumps({"message": "Erro ao cadastrar viajante."}),
+            status = 500,
+            mimetype = "application/json",
+        )
 
 @app.route('/traveller-signin', methods=['POST'])
 @cross_origin()
@@ -152,6 +162,8 @@ def login_traveller():
     except Exception as ex:
         print(ex)
         return Response( response = json.dumps({"message": "cannot find the user."}), status = 500, mimetype = "application/json")
+
+################################### SERVICES
 
 @app.route('/agent-create-package', methods=['POST'])
 @cross_origin()
@@ -195,7 +207,6 @@ def create_package():
                 "status": "ongoing" #ongoing/finished 
             }
         }
-        #TODO: validações: pesquisar para ver ser agente e viajante existem no banco, de fato.
 
         dbResponse = db.trip_package.insert_one(trip)
         return Response(
@@ -204,7 +215,52 @@ def create_package():
             mimetype = "application/json",
         )
     except Exception as ex:
+        print(ex)
         return Response( response = json.dumps({"message": "requisicao de pacote invalida."}), status = 400, mimetype = "application/json")
+
+@app.route('/agent-trips/<string:id>', methods=['GET'])
+@cross_origin()
+def agent_trips(id):
+    try:
+        dbResponseAgent = list(db.agent.find({"_id": ObjectId(str(id))}))
+        if not dbResponseAgent:
+            return Response(
+                response = json.dumps({"message": 'agente nao existe.'}),
+                status = 409,
+                mimetype = "application/json",
+            )
+        username = dbResponseAgent[0]["username"]
+        trips = get_trips(username)
+
+        return trips
+    except Exception as ex:
+        return Response( response = json.dumps({"message": "erro ao recuperar viajens do agente."}), status = 500, mimetype = "application/json")
+
+def get_trips(username):
+    return username
+
+# @app.route('/agent-username/<string:id>', methods=['GET'])
+# @cross_origin()
+# def agent_username(id):
+#     try:
+#         dbResponseAgent = list(db.agent.find({"_id": ObjectId(str(id))}))
+#         if not dbResponseAgent:
+#             return Response(
+#                 response = json.dumps({"message": 'agente nao encontrado.'}),
+#                 status = 409,
+#                 mimetype = "application/json",
+#             )
+#         for user in dbResponseAgent:
+#             user['_id'] = str(user['_id'])
+
+#         return Response(
+#             response = json.dumps({"username": f'{dbResponseAgent[0]["username"]}'}),
+#             status = 200,
+#             mimetype = "application/json",
+#         )
+
+#     except Exception as ex:
+#         return Response( response = json.dumps({"message": "erro ao recuperar viajens do agente."}), status = 500, mimetype = "application/json")
 
 
 ###################################
