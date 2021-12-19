@@ -2,6 +2,7 @@ import pymongo
 import json
 from flask import Flask, Response, request
 from flask_cors import CORS, cross_origin
+from bson.objectid import ObjectId
 # from pymongo.common import SERVER_SELECTION_TIMEOUT
 
 app = Flask(__name__)
@@ -29,7 +30,7 @@ def create_agent():
         agent = {
             "username": data["username"], 
             "firstname": data["firstname"],
-            "lastName": data["lastname"],
+            "lastname": data["lastname"],
             "password": data["password"],
             "email": data["email"],
             "company": data["company"],
@@ -58,16 +59,24 @@ def create_agent():
 def login_agent():
     try:
         data = json.loads(request.data)
+        
+        #validacao (verificar se existem campos "username" ou passwod)
         agent = {
             "username": data["username"], 
             "password": data["password"]
         }
-
-        dbResponse = list(db.agent.find())
+        dbResponse = list(db.agent.find({"username": agent["username"]}))
 
         for user in dbResponse:
             user['_id'] = str(user['_id'])
-        print(dbResponse)
+
+        #validacao (verificar se senhas batem)
+        if not dbResponse or dbResponse[0]["password"] != agent["password"]:
+            return Response(
+                response = json.dumps({"message": 'credenciais invalidas.'}),
+                status = 401,
+                mimetype = "application/json",
+            )
 
         return Response(
             response = json.dumps({"id": f'{dbResponse[0]["_id"]}'}),
@@ -86,10 +95,22 @@ def create_traveller():
         traveller = {
             "username": data["username"], 
             "firstname": data["firstname"],
-            "lastName": data["lastname"],
+            "lastname": data["lastname"],
             "password": data["password"],
             "email": data["email"]
         }
+
+        #validacao (verificar se usuario ja esta no banco)
+        dbResponse = list(db.traveller.find({"username": traveller["username"]}))
+        for user in dbResponse:
+            user['_id'] = str(user['_id'])
+        if dbResponse:
+            return Response(
+                response = json.dumps({"message": 'usuario ja existe.'}),
+                status = 409,
+                mimetype = "application/json",
+            )
+
         dbResponse = db.traveller.insert_one(traveller)
         return Response(
             response = json.dumps({"message": "traveller created", "id": f'{dbResponse.inserted_id}'}),
@@ -98,6 +119,39 @@ def create_traveller():
         )
     except Exception as ex:
         print(ex)
+
+@app.route('/traveller-signin', methods=['POST'])
+@cross_origin()
+def login_traveller():
+    try:
+        data = json.loads(request.data)
+        
+        #validacao (verificar se existem campos "username" ou passwod)
+        traveller = {
+            "username": data["username"], 
+            "password": data["password"]
+        }
+        dbResponse = list(db.traveller.find({"username": traveller["username"]}))
+
+        for user in dbResponse:
+            user['_id'] = str(user['_id'])
+
+        #validacao (verificar se senhas batem)
+        if not dbResponse or dbResponse[0]["password"] != traveller["password"]:
+            return Response(
+                response = json.dumps({"message": 'credenciais invalidas.'}),
+                status = 401,
+                mimetype = "application/json",
+            )
+
+        return Response(
+            response = json.dumps({"id": f'{dbResponse[0]["_id"]}'}),
+            status = 200,
+            mimetype = "application/json",
+        )
+    except Exception as ex:
+        print(ex)
+        return Response( response = json.dumps({"message": "cannot find the user."}), status = 500, mimetype = "application/json")
 
 ###################################
 if __name__ == '__main__':
