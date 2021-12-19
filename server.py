@@ -153,6 +153,60 @@ def login_traveller():
         print(ex)
         return Response( response = json.dumps({"message": "cannot find the user."}), status = 500, mimetype = "application/json")
 
+@app.route('/agent-create-package', methods=['POST'])
+@cross_origin()
+def create_package():
+    try:
+        data = json.loads(request.data)
+        #validacao (verificar se existem campos "username" ou passwod) - se estiver errado, gera status 400
+        package = data["trip"]
+        city = package["country"]["city"]
+
+        #validacao (verificar se usuario ja esta no banco)
+        dbResponseAgent = list(db.agent.find({"username": package["agent"]}))
+        dbResponseTraveller = list(db.traveller.find({"username": package["traveller"]}))
+        if not (bool(dbResponseAgent) and bool(dbResponseTraveller)):
+            return Response(
+                response = json.dumps({"message": 'agente ou viajante nao existe.'}),
+                status = 409,
+                mimetype = "application/json",
+            )
+
+        country = [
+            {
+                "name": package["country"]["name"],
+                "city": [
+                    {
+                        "name": city["name"],
+                        "restaurant": city["restaurant"],
+                        "hotel": city["hotel"],
+                        "tourism": city["tourism"],
+                        "leisure": city["leisure"]
+                    }
+                ]
+            }
+        ]
+        trip = {
+            "trip":
+            {
+                "agent": package["agent"], 
+                "traveller": package["traveller"],
+                "country": country,
+                "status": "ongoing" #ongoing/finished 
+            }
+        }
+        #TODO: validações: pesquisar para ver ser agente e viajante existem no banco, de fato.
+
+        dbResponse = db.trip_package.insert_one(trip)
+        return Response(
+            response = json.dumps({"message": "trip created", "id": f'{dbResponse.inserted_id}'}),
+            status = 200,
+            mimetype = "application/json",
+        )
+    except Exception as ex:
+        return Response( response = json.dumps({"message": "requisicao de pacote invalida."}), status = 400, mimetype = "application/json")
+
+
 ###################################
 if __name__ == '__main__':
     app.run(port=3333, debug=True)
