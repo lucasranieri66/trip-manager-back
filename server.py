@@ -230,7 +230,7 @@ def agent_trips(id):
                 mimetype = "application/json",
             )
         username = dbResponseAgent[0]["username"]
-        trips = get_trips(username)
+        trips = get_trips(username, agent=True)
 
         return Response(
             response = json.dumps(trips),
@@ -241,9 +241,36 @@ def agent_trips(id):
         print(ex)
         return Response( response = json.dumps({"message": "erro ao recuperar viajens do agente."}), status = 500, mimetype = "application/json")
 
-def get_trips(username):
-    trips = list(db.trip_package.find({"trip.agent": username}))
-  
+@app.route('/traveller-trips/<string:id>', methods=['GET'])
+@cross_origin()
+def traveller_trips(id):
+    try:
+        dbResponseTraveller = list(db.traveller.find({"_id": ObjectId(str(id))}))
+        if not dbResponseTraveller:
+            return Response(
+                response = json.dumps({"message": 'viajante nao existe.'}),
+                status = 409,
+                mimetype = "application/json",
+            )
+        
+        username = dbResponseTraveller[0]["username"]
+        trips = get_trips(username, agent=False)
+
+        return Response(
+            response = json.dumps(trips),
+            status = 200,
+            mimetype = "application/json",
+        )
+    except Exception as ex:
+        print(ex)
+        return Response( response = json.dumps({"message": "erro ao recuperar viajens do viajante."}), status = 500, mimetype = "application/json")
+
+
+def get_trips(username, agent):
+
+    if agent: trips = list(db.trip_package.find({"trip.agent": username}))
+    else: trips = list(db.trip_package.find({"trip.traveller": username}))
+
     for trip in trips:
         trip['_id'] = str(trip['_id'])
   
