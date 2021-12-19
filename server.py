@@ -232,12 +232,22 @@ def agent_trips(id):
         username = dbResponseAgent[0]["username"]
         trips = get_trips(username)
 
-        return trips
+        return Response(
+            response = json.dumps(trips),
+            status = 200,
+            mimetype = "application/json",
+        )
     except Exception as ex:
+        print(ex)
         return Response( response = json.dumps({"message": "erro ao recuperar viajens do agente."}), status = 500, mimetype = "application/json")
 
 def get_trips(username):
-    return username
+    trips = list(db.trip_package.find({"trip.agent": username}))
+  
+    for trip in trips:
+        trip['_id'] = str(trip['_id'])
+  
+    return trips
 
 # @app.route('/agent-username/<string:id>', methods=['GET'])
 # @cross_origin()
